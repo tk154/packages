@@ -1,7 +1,7 @@
 name: Test Build
 
 on:
-  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -62,7 +62,7 @@ jobs:
 
       - name: Determine branch name
         run: |
-          BRANCH="${GITHUB_BASE_REF#refs/heads/}"
+          BRANCH="mstflint"
           echo "Building for $BRANCH"
           echo "BRANCH=$BRANCH" >> $GITHUB_ENV
 
@@ -103,7 +103,7 @@ jobs:
       - name: Build
         uses: openwrt/gh-action-sdk@v7
         env:
-          ARCH: ${{ matrix.arch }}-${{ env.BRANCH }}
+          ARCH: ${{ matrix.arch }}
           FEEDNAME: packages_ci
           INDEX: 1
           KEY_BUILD: ${{ env.KEY_BUILD }}
@@ -198,7 +198,7 @@ jobs:
         run: |
           docker build --platform linux/${{ matrix.arch }} -t test-container --build-arg ARCH .github/workflows/
         env:
-          ARCH: ${{ matrix.arch }}-${{ env.BRANCH }}
+          ARCH: ${{ matrix.arch }}
 
       - name: Test via Docker container
         if: ${{ matrix.runtime_test && fromJSON(env.HAVE_IPKS) }}
