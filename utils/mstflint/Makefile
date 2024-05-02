@@ -86,11 +86,23 @@ define Package/mstflint/config
       All mstflint tools including the following Python-dependent:
         msftwreset, mstfwtrace, mstprivhost,
         mstresourcedump, mstresourceparse
+
+  config PACKAGE_MSTFLINT_INFINIBAND_SUPPORT
+    bool "InfiniBand support"
+    default y
+    depends on PACKAGE_mstflint
+    help
+      Enables FW update for Mellanox SwitchX and ConnectIB devices
 endef
 
+PKG_BUILD_DEPENDS:=PACKAGE_MSTFLINT_INFINIBAND_SUPPORT:libibmad
+
+ifeq ($(CONFIG_PACKAGE_MSTFLINT_INFINIBAND_SUPPORT),n)
+  CONFIGURE_ARGS += --disable-inband
+endif
+
 CONFIGURE_ARGS += \
-	--enable-fw-mgr \
-	--disable-inband
+	--enable-fw-mgr
 
 TARGET_CFLAGS += \
 	-D_GNU_SOURCE \
