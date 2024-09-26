@@ -1,0 +1,12 @@
+diff --git a/mflash/mflash_dev_capability.c b/mflash/mflash_dev_capability.c
+index ff3c8bc..52e3e0e 100644
+--- a/mflash/mflash_dev_capability.c
++++ b/mflash/mflash_dev_capability.c
+@@ -40,6 +40,7 @@
+  */
+ 
+ #include "mflash_dev_capability.h"
++#include <stdlib.h>
+ 
+ // When (*status != MFE_OK) return value is undefined
+ int is_four_byte_address_needed(mflash* mfl, MfError* status)

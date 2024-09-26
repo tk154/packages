@@ -1,0 +1,13 @@
+diff --git a/./mtcr_ul/mtcr_ul_com.c b/./mtcr_ul/mtcr_ul_com.c
+index affe690..948a2d4 100644
+--- a/./mtcr_ul/mtcr_ul_com.c
++++ b/./mtcr_ul/mtcr_ul_com.c
+@@ -85,7 +85,7 @@
+ 
+ #if CONFIG_ENABLE_MMAP
+ #include <sys/mman.h>
+-#include <sys/pci.h>
++#include <linux/pci.h>
+ #include <sys/ioctl.h>
+ #endif
+ 

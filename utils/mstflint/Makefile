@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mstflint
-PKG_VERSION:=4.29.0
+PKG_VERSION:=4.25.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-1.tar.gz
 PKG_SOURCE_URL:=https://github.com/Mellanox/$(PKG_NAME)/releases/download/v$(PKG_VERSION)-1
-PKG_SOURCE_DATE:=2024-08-13
-PKG_HASH:=1bd048146f1fe0493d4770b244b02e32981b49caed068fd96a22700103220654
+PKG_SOURCE_DATE:=2023-08-10
+PKG_HASH:=9d81a259fafc6b7ab7f9b1946f5a2f2eb012f3f2e71097fee229c8125956f79b
 
 PKG_MAINTAINER:=Til Kaiser <mail@tk154.de>
 PKG_LICENSE:=GPL-2.0-only
@@ -32,8 +32,8 @@ define Package/mstflint
   TITLE:=Mellanox Firmware Burning and Diagnostics Tools
   URL:=https://github.com/Mellanox/mstflint
   DEPENDS:=@!(mips||mips64||mipsel) \
-    +libcurl +libexpat +liblzma +libopenssl \
-    +libsqlite3 +libstdcpp +libxml2 +zlib
+    +boost-filesystem +boost-regex +boost-system \
+    +libcurl +liblzma +libopenssl +libsqlite3 +libxml2 +zlib
 endef
 
 define Package/mstflint/description
@@ -90,8 +90,7 @@ endef
 
 CONFIGURE_ARGS += \
 	--enable-fw-mgr \
-	--disable-inband \
-	--enable-adb-generic-tools
+	--disable-inband
 
 TARGET_CFLAGS += \
 	-D_GNU_SOURCE \
@@ -111,14 +110,11 @@ define Package/mstflint/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstconfig $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstcongestion $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstflint $(1)/usr/bin/
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstfwctrl $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstfwmanager $(1)/usr/bin/
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstlink $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstmcra $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstmread $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstmtserver $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstmwrite $(1)/usr/bin/
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstreg $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstregdump $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstvpd $(1)/usr/bin/
 
