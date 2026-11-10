@@ -8,14 +8,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mstflint
-PKG_VERSION:=4.37.0
+PKG_VERSION:=4.38.0
 PKG_SUBVERSION:=1
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SUBVERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/Mellanox/$(PKG_NAME)/releases/download/v$(PKG_VERSION)-$(PKG_SUBVERSION)
-PKG_SOURCE_DATE:=2026-09-01
-PKG_HASH:=89299633cc78c17032547aa78b9df1d9bf08c5bd6279cde7750bd4d4367afb81
+PKG_SOURCE_DATE:=2026-11-09
+PKG_HASH:=063f8199edc19be28aa52121c381af207847af30549aa7c6f4e4f3f912a5b765
 
 PKG_MAINTAINER:=Til Kaiser <mail@tk154.de>
 PKG_LICENSE:=GPL-2.0-only
@@ -95,6 +95,12 @@ CONFIGURE_ARGS += \
 	--disable-inband \
 	--enable-adb-generic-tools
 
+CONFIGURE_VARS += \
+	CXX_FOR_BUILD="$(HOSTCXX)" \
+	CPPFLAGS_FOR_BUILD="$(HOST_CPPFLAGS)" \
+	CXXFLAGS_FOR_BUILD="$(HOST_CXXFLAGS)" \
+	LDFLAGS_FOR_BUILD="$(HOST_LDFLAGS)"
+
 TARGET_CFLAGS += \
 	-D_GNU_SOURCE \
 	-I$(STAGING_DIR)/usr/include/libxml2
@@ -115,6 +121,7 @@ define Package/mstflint/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstdevices_info $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstefuse $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstflint $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstflintlogger $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstfwctrl $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstfwmanager $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstlink $(1)/usr/bin/
@@ -135,6 +142,7 @@ ifeq ($(CONFIG_PACKAGE_MSTFLINT_INCLUDE_PYTHON),y)
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstfwreset $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstfwtrace $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstgenerate_pgcb_commands $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstpcie $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstprivhost $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstresourcedump $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mstresourceparse $(1)/usr/bin/

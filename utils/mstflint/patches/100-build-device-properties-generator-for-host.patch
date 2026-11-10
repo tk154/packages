@@ -1,0 +1,106 @@
+From c8e3e360ee07dba3c51263b2885033cf4381de6e Mon Sep 17 00:00:00 2001
+From: Til Kaiser <mail@tk154.de>
+Date: Wed, 11 Nov 2026 11:53:20 +0100
+Subject: [PATCH] [build] build device-properties generator with native
+ compiler
+
+generate_device_properties runs during the build, but the normal program
+rule uses the target compiler and libjson.la. Cross-builds therefore try
+to execute a binary for the target architecture or C library.
+
+When cross-compiling for OpenWrt x86_64 musl on a glibc build machine,
+the build fails with:
+
+    ./generate_device_properties ./json generated
+    make[7]: ./generate_device_properties: No such file or directory
+    make[7]: *** [Makefile:1320: generated/.device_properties_data.stamp] Error 127
+
+The executable exists, but requests /lib/ld-musl-x86_64.so.1, which is
+not available on the build machine.
+
+Allow selecting CXX_FOR_BUILD and independent build-machine flags. Reuse
+CXX and its flags for native builds; otherwise use a separate build-machine
+C++ compiler. Build the generator and bundled JSON sources directly with
+C++11, retaining source distribution and cleanup rules.
+---
+ configure.ac                            | 13 +++++++++++++
+ mft_core/device/device_info/Makefile.am | 27 ++++++++++++++++-----------
+ 2 files changed, 29 insertions(+), 11 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 24fc076b..343c52c8 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -42,6 +42,19 @@ dnl Checks for programs
+ AC_PROG_CC
+ AC_PROG_CXX
+
++dnl The device-properties generator runs on the build machine, not the host.
++AC_ARG_VAR([CXX_FOR_BUILD], [build-machine C++ compiler for the device-properties generator])
++AC_ARG_VAR([CPPFLAGS_FOR_BUILD], [build-machine C/C++ preprocessor flags])
++AC_ARG_VAR([CXXFLAGS_FOR_BUILD], [build-machine C++ compiler flags])
++AC_ARG_VAR([LDFLAGS_FOR_BUILD], [build-machine linker flags])
++AS_IF([test "x$cross_compiling" = xno], [
++    : ${CXX_FOR_BUILD="$CXX"}
++    : ${CPPFLAGS_FOR_BUILD="$CPPFLAGS"}
++    : ${CXXFLAGS_FOR_BUILD="$CXXFLAGS"}
++    : ${LDFLAGS_FOR_BUILD="$LDFLAGS"}
++])
++AC_CHECK_PROGS([CXX_FOR_BUILD], [c++ g++ clang++])
++
+ AC_MSG_CHECKING([whether the C library is musl])
+ AC_EGREP_CPP([mstflint_is_musl],
+     [#include <stdlib.h>
+diff --git a/mft_core/device/device_info/Makefile.am b/mft_core/device/device_info/Makefile.am
+index e094f182..ff794896 100644
+--- a/mft_core/device/device_info/Makefile.am
++++ b/mft_core/device/device_info/Makefile.am
+@@ -55,12 +55,16 @@ libdevice_info_la_LIBADD = \
+-noinst_PROGRAMS = generate_device_properties
+-generate_device_properties_CPPFLAGS = $(JSON_CFLAGS)
+-generate_device_properties_SOURCES = generate_device_properties.cpp
+-generate_device_properties_LDADD = $(JSON_LIBS)
+-generate_device_properties_DEPENDENCIES = $(JSON_LIBS)
+-
+-# Build libjson.la on demand, so `make -C mft_core` works before ext_libs is built.
+-$(top_builddir)/ext_libs/json/libjson.la:
+-	cd $(top_builddir)/ext_libs/json && $(MAKE) $(AM_MAKEFLAGS) libjson.la
++# Do not link the build-machine generator against the host's libjson.la.
++DEVICE_PROPS_GENERATOR_SRCS = \
++    $(srcdir)/generate_device_properties.cpp \
++    $(top_srcdir)/ext_libs/json/json_reader.cpp \
++    $(top_srcdir)/ext_libs/json/json_value.cpp \
++    $(top_srcdir)/ext_libs/json/json_writer.cpp
++
++generate_device_properties$(EXEEXT): $(DEVICE_PROPS_GENERATOR_SRCS) \
++    $(wildcard $(top_srcdir)/ext_libs/json/json/*.h) \
++    $(top_srcdir)/ext_libs/json/json_tool.h $(top_srcdir)/ext_libs/json/json_valueiterator.inl
++	$(AM_V_CXX)$(CXX_FOR_BUILD) -I$(top_srcdir)/ext_libs/json \
++	  $(CPPFLAGS_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -std=c++11 -o $@ \
++	  $(DEVICE_PROPS_GENERATOR_SRCS) $(LDFLAGS_FOR_BUILD)
+ 
+ DEVICE_PROPS_GENERATOR = generate_device_properties$(EXEEXT)
+ DEVICE_PROPS_JSON_DIR = $(srcdir)/json
+@@ -70,7 +74,7 @@ DEVICE_PROPS_GEN_PY = $(DEVICE_PROPS_GEN_DIR)/device_properties_data.py
+ DEVICE_PROPS_GEN_STAMP = $(DEVICE_PROPS_GEN_DIR)/.device_properties_data.stamp
+ 
+ BUILT_SOURCES = $(DEVICE_PROPS_GEN_H) $(DEVICE_PROPS_GEN_PY)
+-CLEANFILES = $(DEVICE_PROPS_GEN_H) $(DEVICE_PROPS_GEN_PY) $(DEVICE_PROPS_GEN_STAMP)
++CLEANFILES = $(DEVICE_PROPS_GEN_H) $(DEVICE_PROPS_GEN_PY) $(DEVICE_PROPS_GEN_STAMP) $(DEVICE_PROPS_GENERATOR)
+ 
+ # A single generator invocation produces both files. Drive it through one
+ # stamp target so the recipe runs exactly once even under `make -j`, avoiding
+@@ -92,11 +96,12 @@ $(DEVICE_PROPS_GEN_PY): $(DEVICE_PROPS_GEN_H)
+ 
+ $(DEVICE_PROPS_GEN_STAMP): $(DEVICE_PROPS_GENERATOR) $(wildcard $(DEVICE_PROPS_JSON_DIR)/*.json)
+ 	$(MKDIR_P) $(DEVICE_PROPS_GEN_DIR)
+-	@touch $@
+ 	./$(DEVICE_PROPS_GENERATOR) $(DEVICE_PROPS_JSON_DIR) $(DEVICE_PROPS_GEN_DIR)
++	@touch $@
+ 	@touch $(DEVICE_PROPS_GEN_H) $(DEVICE_PROPS_GEN_PY)
+ 
+ EXTRA_DIST = \
++    generate_device_properties.cpp \
+     device_properties_api.py \
+     device_properties_constants.py \
+     unit_test/test_device_id_constants.py \
